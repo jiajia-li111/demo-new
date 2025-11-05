@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Tuple
 import pandas as pd
 import numpy as np
 
-from msg import device_simulator, get_realtime_health_data
+from healthdevicer import device_simulator, get_realtime_health_data
 from current_data import data_processor
 
 class UnifiedHealthDataProcessor:
