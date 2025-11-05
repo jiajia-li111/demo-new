@@ -1,0 +1,117 @@
+import os
+import sys
+import os
+import json
+import uuid
+from datetime import datetime
+
+# 获取当前文件所在目录的绝对路径
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 将当前目录加入sys.path
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
+
+import streamlit as st
+# 使用相对导入
+
+# 导入实时数据模块
+
+try:
+    from predict.detect_and_get.request import ask_deepseek
+except Exception:
+    ask_deepseek = None
+
+
+def build_health_prompt(task_name: str, inputs: dict, prediction: int, probability: list) -> str:
+    """构造发送给 DeepSeek 的中文提示词。"""
+    # 计算正类概率（假设 index=1 为患病概率）
+    positive_proba = 0.0
+    if isinstance(probability, (list, tuple)) and len(probability) >= 2:
+        positive_proba = float(probability[1])
+    elif isinstance(probability, (list, tuple)) and len(probability) == 1:
+        positive_proba = float(probability[0])
+
+    lines = [
+        "你是一名资深的临床健康顾问，请基于以下模型预测结果，用简体中文给出通俗、可执行的健康建议。",
+        f"- 任务: {task_name}",
+        f"- 预测类别: {prediction} (1=高风险/阳性，0=低风险/阴性)",
+        f"- 模型给出的患病概率(估计): {positive_proba:.2%}",
+        "- 用户关键输入:"
+    ]
+    for k, v in inputs.items():
+        lines.append(f"  - {k}: {v}")
+    lines += [
+        "要求:",
+        "1) 先用一句话总结总体风险判断。",
+        "2) 给出生活方式与饮食、运动、作息、体重管理、戒烟限酒等方面的具体建议（可分条列出）。",
+        "3) 指出需要警惕的症状与自我监测要点（如血压/血糖/体重监测频率与阈值）。",
+        "4) 给出何时需要尽快线下就医的触发条件。",
+        "5) 语气温和，避免制造恐慌；不进行诊断，仅提供健康建议。"
+    ]
+    return "\n".join(lines)
+
+
+def call_deepseek_or_fallback(prompt: str) -> str:
+    """调用 DeepSeek，失败时返回兜底建议。"""
+    # 优先使用项目内封装的 ask_deepseek
+    if ask_deepseek is not None:
+        try:
+            return ask_deepseek(prompt)
+        except Exception as err:
+            pass
+
+    # 兜底建议（不依赖外部 API）
+    return (
+        "提示：未能连接到健康建议服务，以下为通用健康建议供参考：\n"
+        "- 保持均衡饮食，控制精制糖和高盐摄入，增加蔬果与优质蛋白摄入。\n"
+        "- 每周至少进行150分钟中等强度有氧运动，并结合力量训练。\n"
+        "- 保持规律作息，确保7-8小时睡眠，减压与情绪管理。\n"
+        "- 体重管理：建议监测体重与腰围，逐步达成健康范围。\n"
+        "- 如存在胸闷胸痛、呼吸困难、持续头晕、明显浮肿、持续异常口渴与尿频等情况，请尽快线下就医。"
+    )
+
+
+# 用户数据管理模块
+class UserManager:
+    def __init__(self, data_dir="local_data"):
+        self.data_dir = os.path.abspath(data_dir)
+        os.makedirs(self.data_dir, exist_ok=True)
+
+    def save_user_data(self, user_id, form_data, predictions):
+        """保存用户数据和预测结果"""
+        user_data = {
+            'user_id': user_id,
+            'timestamp': datetime.now().isoformat(),
+            'form_data': form_data,
+            'predictions': predictions
+        }
+        filename = f"user_{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        filepath = os.path.join(self.data_dir, filename)
+
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(user_data, f, ensure_ascii=False, indent=2)
+
+        return filepath
+
+    def get_saved_users(self):
+        return sorted([f for f in os.listdir(self.data_dir) if f.endswith('.json')], reverse=True)
+
+    def load_user_data(self, filename):
+        filepath = os.path.join(self.data_dir, filename)
+        if os.path.exists(filepath):
+            with open(filepath, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return None
+    
+    def delete_user_data(self, filename):
+        """删除某个用户记录"""
+        filepath = os.path.join(self.data_dir, filename)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            return True
+        return False
+    
+    
+
+user_manager = UserManager()
+
