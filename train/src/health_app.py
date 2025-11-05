@@ -16,8 +16,60 @@ if current_dir not in sys.path:
 
 import streamlit as st
 FLASK_BASE_URL = "http://127.0.0.1:5000"
+API_BASE = FLASK_BASE_URL
 
+def render_login_page():
+    """登录 / 注册 页面"""
+    st.title("🔐 用户登录")
+    st.caption("登录后即可访问健康风险预测与管理系统")
 
+    username = st.text_input("用户名")
+    password = st.text_input("密码", type="password")
+
+    col1, col2 = st.columns(2)
+
+    # 登录按钮
+    with col1:
+        if st.button("登录", use_container_width=True):
+            if not username or not password:
+                st.warning("请输入用户名和密码！")
+            else:
+                try:
+                    res = requests.post(
+                        f"{API_BASE}/login",
+                        json={"username": username, "password": password},
+                        timeout=5
+                    )
+                    result = res.json()
+                    if result.get("success"):
+                        st.session_state.authenticated = True
+                        st.session_state.username = username
+                        st.success("✅ 登录成功！")
+                        st.rerun()
+                    else:
+                        st.error(result.get("message", "登录失败"))
+                except Exception as e:
+                    st.error(f"无法连接后端：{e}")
+
+    # 注册按钮
+    with col2:
+        if st.button("注册新用户", use_container_width=True):
+            if not username or not password:
+                st.warning("请输入用户名和密码！")
+            else:
+                try:
+                    res = requests.post(
+                        f"{API_BASE}/register",
+                        json={"username": username, "password": password},
+                        timeout=5
+                    )
+                    result = res.json()
+                    if result.get("success"):
+                        st.success("✅ 注册成功，请重新登录！")
+                    else:
+                        st.error(result.get("message", "注册失败"))
+                except Exception as e:
+                    st.error(f"无法连接后端：{e}")
 
 
 def render_health_reference_dashboard():
@@ -612,6 +664,19 @@ def render_health_reference_page():
 
 def main():
     st.set_page_config(page_title="健康风险预测与建议", page_icon="🩺", layout="centered")
+    
+    # 初始化登录状态
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+    if "username" not in st.session_state:
+        st.session_state.username = None
+
+    # === 登录拦截逻辑 ===
+    if not st.session_state.authenticated:
+        render_login_page()
+        st.stop()   # 🚫 阻止下面的主界面加载
+    
+    
     st.title("🩺 健康风险预测与管理系统")
     st.caption("使用已训练模型进行预测，提供个性化健康建议并管理您的健康评估记录。")
 

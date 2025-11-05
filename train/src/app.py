@@ -1,11 +1,12 @@
 
-from msg import device_simulator
+from healthdevicer import device_simulator
 from data_gather import unified_processor
 from current_data import data_processor
 from user_data import user_manager,build_health_prompt,call_deepseek_or_fallback
 from detect_diabetes import detect_diabetes_simple
 from detect_heart import detect_heart_simple
 from flask import Flask, jsonify, request
+from auth import register_user, login_user
 
 app = Flask(__name__)
 
@@ -185,5 +186,17 @@ def deepseek_call():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+
+@app.route("/register", methods=["POST"])
+def register():
+    data = request.get_json()
+    return jsonify(register_user(data["username"], data["password"]))
+
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    return jsonify(login_user(data["username"], data["password"]))
+
 if __name__ == "__main__":
     app.run(debug=True)
