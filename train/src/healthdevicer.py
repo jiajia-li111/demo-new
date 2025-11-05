@@ -189,3 +189,5 @@ def get_realtime_health_data():
         "current": device_simulator.get_current_data(),
         "summary": device_simulator.get_status_summary()
     }
+    
+a=1
