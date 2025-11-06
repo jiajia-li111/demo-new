@@ -1,50 +1,55 @@
+# path: app/auth_service.py
+import os
+import re
 import pymysql
-import hashlib
+import bcrypt
+from pymysql.cursors import DictCursor
+from database import get_conn
 
-# === 数据库配置 ===
-DB_CONFIG = {
-    "host": "localhost",     # 数据库地址
-    "user": "root",          # 用户名
-    "password": "ljj21041102",    # 密码
-    "database": "health_system",
-    "charset": "utf8mb4"
-}
 
-def get_conn():
-    """建立数据库连接"""
-    return pymysql.connect(**DB_CONFIG)
+# === 密码加密与验证 ===
+def hash_password(password: str) -> str:
+    """加密密码"""
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
 
-def hash_password(password: str):
-    """生成密码哈希"""
-    return hashlib.sha256(password.encode()).hexdigest()
+def check_password(password: str, hashed: str) -> bool:
+    """验证密码"""
+    return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
 
-def register_user(username: str, password: str) -> dict:
+# === 注册用户 ===
+def register_user(username: str, password: str):
     """注册新用户"""
-    conn = get_conn()
-    cursor = conn.cursor()
+    if not re.fullmatch(r"[A-Za-z0-9_\-\.]{3,32}", username):
+        return {"success": False, "message": "用户名需为3-32位字母数字及_.-"}
+    if len(password) < 8:
+        return {"success": False, "message": "密码至少8位"}
+
+    pw_hash = hash_password(password)
+
     try:
-        cursor.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s)",
-                       (username, hash_password(password)))
+        conn = get_conn()
+        with conn.cursor() as cur:
+            cur.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s)", (username, pw_hash))
         conn.commit()
         return {"success": True, "message": "注册成功"}
     except pymysql.err.IntegrityError:
         return {"success": False, "message": "用户名已存在"}
     finally:
-        cursor.close()
         conn.close()
 
-def login_user(username: str, password: str) -> dict:
+# === 登录验证 ===
+def login_user(username: str, password: str):
     """验证用户登录"""
     conn = get_conn()
-    cursor = conn.cursor()
-    cursor.execute("SELECT password_hash FROM users WHERE username=%s", (username,))
-    row = cursor.fetchone()
-    cursor.close()
+    with conn.cursor() as cur:
+        cur.execute("SELECT password_hash FROM users WHERE username=%s", (username,))
+        row = cur.fetchone()
     conn.close()
 
     if not row:
         return {"success": False, "message": "用户不存在"}
-    elif row[0] != hash_password(password):
+    if not check_password(password, row["password_hash"]):
         return {"success": False, "message": "密码错误"}
-    else:
-        return {"success": True, "message": "登录成功"}
+    return {"success": True, "message": "登录成功"}
+

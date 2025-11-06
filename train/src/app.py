@@ -7,8 +7,11 @@ from detect_diabetes import detect_diabetes_simple
 from detect_heart import detect_heart_simple
 from flask import Flask, jsonify, request
 from auth import register_user, login_user
+from database import init_db
 
 app = Flask(__name__)
+
+init_db()
 
 @app.route("/start", methods=["POST"])
 def start_monitoring_api():
