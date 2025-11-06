@@ -472,7 +472,7 @@ def show_prediction_results(form_data, predictions, save_path=None):
                 res = requests.post(
                     f"{FLASK_BASE_URL}/deepseek_call",
                     json={"prompt": prompt},
-                    timeout=20
+                    timeout=40
                 )
                 res.raise_for_status()
                 advice = res.json().get("result", "未获取到健康建议")
@@ -583,6 +583,9 @@ def render_history():
             if st.button("返回评估", use_container_width=True):
                 st.session_state['active_tab'] = 'assessment'
                 st.rerun()
+                
+                
+
 
 def render_visualization():
     st.subheader("身体数据可视化")

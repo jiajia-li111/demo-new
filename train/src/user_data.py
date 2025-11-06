@@ -2,16 +2,16 @@ import os
 import sys
 import os
 import json
-import uuid
 from datetime import datetime
 
-# 获取当前文件所在目录的绝对路径
+# user_data.py 顶部的位置
+import os, sys
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# 将当前目录加入sys.path
-if current_dir not in sys.path:
-    sys.path.append(current_dir)
 
-import streamlit as st
+# 加到项目根（假设结构是 demo-project/train/src/ 当前文件在 src/ 下）
+project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
+if project_root not in sys.path:
+    sys.path.append(project_root)
 # 使用相对导入
 
 # 导入实时数据模块
@@ -19,6 +19,7 @@ import streamlit as st
 try:
     from predict.detect_and_get.request import ask_deepseek
 except Exception:
+    print("❌ 导入 ask_deepseek 失败：")
     ask_deepseek = None
 
 

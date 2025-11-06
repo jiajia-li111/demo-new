@@ -17,4 +17,4 @@ cd "C:\Users\17818\Downloads\DEMO\demo-project\train\src"
 python app.py
 
 cd "C:\Users\17818\Downloads\DEMO\demo-project\train\src"
-streamlit run health_app.py
+streamlit run streamlit_front.py

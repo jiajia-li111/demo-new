@@ -1,28 +1,23 @@
 import requests
 import json
+import os
 
 def ask_deepseek(question, model="deepseek-chat", temperature=0.7, max_tokens=2048):
-    """
-    Ask a question to the DeepSeek API and return the response.
-
-    Args:
-        question (str): The question to ask.
-        model (str): The model to use for the request.
-        temperature (float): The temperature for the response.
-        max_tokens (int): The maximum number of tokens in the response.
-
-    Returns:
-        str: The response from the DeepSeek API.
-    """
     payload = {
-        "model": model,
-        "messages": [{"role": "user", "content": question}],
-        "temperature": temperature,
-        "max_tokens": max_tokens
-    }
+    "model": model,
+    "messages": [
+        {"role": "system", "content": "你是一名专业的医生，需要根据我的身体数据给我较为专业的建议。"},
+        {"role": "user", "content": question}
+    ],
+    "temperature": temperature,
+    "max_tokens": max_tokens
+}
+
+
     headers = {
-        "Authorization": "Bearer sk-1d71c0f0904c43488c5620c12219246f" 
-    } # API密钥 目前是我的测试用例
+        "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
+    }
+ # API密钥 目前是我的测试用例
     response = requests.post(
         "https://api.deepseek.com/v1/chat/completions",
         json=payload,
