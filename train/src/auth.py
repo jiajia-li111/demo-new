@@ -52,4 +52,3 @@ def login_user(username: str, password: str):
     if not check_password(password, row["password_hash"]):
         return {"success": False, "message": "密码错误"}
     return {"success": True, "message": "登录成功"}
-

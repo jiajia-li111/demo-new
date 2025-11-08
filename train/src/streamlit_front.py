@@ -44,6 +44,7 @@ def render_login_page():
                     if result.get("success"):
                         st.session_state.authenticated = True
                         st.session_state.username = username
+                        st.session_state["user_id"] = username
                         st.success("✅ 登录成功！")
                         st.rerun()
                     else:
@@ -157,11 +158,15 @@ def render_health_reference_dashboard():
             with cols[i]:
                 st.metric(label=f"{name} ({unit})", value=value)
     
-    # 保存报告按钮
     if st.button("保存当前健康报告"):
-        res=requests.post(f"{FLASK_BASE_URL}/health/save", json={"user_id": "anonymous"})
-        filepath = res.json()
-        st.success(f"健康报告已保存: {filepath}")
+    # 直接发送第一次获取的报告，而不是让后端重新计算
+        res = requests.post(
+            f"{FLASK_BASE_URL}/health/save",
+            json={"report": report}  # ← 把前面获取的 report 一并发送
+        )
+        result = res.json()
+        st.success(f"健康报告已保存: {result['reference']}")
+
     
     # 健康趋势
     res = requests.get(f"{FLASK_BASE_URL}/health/trends", params={"user_id": "anonymous", "days": 7})
@@ -407,10 +412,11 @@ def render_unified_form():
             })
             save_res.raise_for_status()
             saved = save_res.json()
-            save_path = saved.get("path")
+            record_id = saved.get("record_id")
+
 
         # 5) 展示结果（你原来的方法）
-            show_prediction_results(form_data, predictions, save_path)
+            show_prediction_results(form_data, predictions,record_id)
 
         except requests.RequestException as e:
             st.error(f"后端接口请求失败：{e}")
@@ -422,7 +428,7 @@ def render_unified_form():
 
 
 # 显示预测结果页面
-def show_prediction_results(form_data, predictions, save_path=None):
+def show_prediction_results(form_data, predictions,record_id):
     st.subheader("健康风险评估报告")
     
     # 显示用户信息卡片
@@ -484,8 +490,8 @@ def show_prediction_results(form_data, predictions, save_path=None):
             st.write(advice)
     
     # 显示保存信息
-    if save_path:
-        st.success(f"您的健康评估报告已保存至: {save_path}")
+    if record_id:
+        st.success(f"您的健康评估报告已保存")
     
     # 添加操作按钮
     col1, col2 = st.columns(2)
@@ -501,78 +507,81 @@ def show_prediction_results(form_data, predictions, save_path=None):
 def render_history():
     st.subheader("历史评估记录")
 
-    # 1. 调用后端接口获取文件列表
+    # 1️⃣ 调后端获取数据库记录
     try:
         res = requests.get(f"{FLASK_BASE_URL}/list_users", timeout=10)
         res.raise_for_status()
-        saved_files = res.json()   # 后端返回的就是一个文件名列表
+        resp = res.json()
+
+        # 兼容老结构
+        saved_records = resp.get("users", []) if isinstance(resp, dict) else resp
     except Exception as e:
         st.error(f"获取历史记录失败: {e}")
         return
 
-    # 2. 判断是否有历史记录
-    if not saved_files:
+    if not saved_records:
         st.info("暂无历史评估记录")
         return
 
-    # 3. 用户选择查看某个记录
-    selected_file = st.selectbox(
-        "选择要查看的评估记录",
-        saved_files,
-        format_func=lambda x: f"{x.split('_')[1]} - {x.split('_')[2].split('.')[0]}"
-    )
-    if selected_file:
-    # === 调用后端接口加载数据 ===
+    # 2️⃣ 下拉框：显示用户 + 时间
+    record_options = {
+        f"{r['user_id']} - {r['timestamp']}": r["id"] for r in saved_records
+    }
+    selected_label = st.selectbox("选择要查看的评估记录", list(record_options.keys()))
+    selected_id = record_options[selected_label]
+
+    # 3️⃣ 加载记录详情
+    user_data = None
+    if selected_id:
         try:
-            res = requests.post(f"{FLASK_BASE_URL}/user/load",
-            json={"filename": selected_file},
-            timeout=10)
+            res = requests.post(
+                f"{FLASK_BASE_URL}/user/load",
+                json={"id": selected_id},
+                timeout=10
+            )
             res.raise_for_status()
             resp_json = res.json()
-            if resp_json.get("message") == "加载成功":
-                user_data = resp_json.get("data", {})
+            if resp_json.get("success"):
+                user_data = resp_json["data"]
             else:
                 st.error(resp_json.get("message", "加载失败"))
-                user_data = None
         except Exception as e:
             st.error(f"加载记录失败: {e}")
-            user_data = None
 
-    # === 显示用户数据 ===
+    # 4️⃣ 显示数据
     if user_data:
         with st.expander("评估记录详情", expanded=True):
-            st.write(f"**评估时间**: {datetime.fromisoformat(user_data['timestamp']).strftime('%Y-%m-%d %H:%M:%S')}")
+            st.write(f"**评估时间**: {user_data['timestamp']}")
             st.write(f"**用户ID**: {user_data['user_id']}")
 
-            # 显示表单数据
             st.markdown("### 个人信息")
             for key, value in user_data['form_data'].items():
                 st.write(f"**{key}**: {value}")
 
-            # 显示预测结果
             st.markdown("### 预测结果")
             for disease, result in user_data['predictions'].items():
                 risk_level = "高风险" if result['prediction'] == 1 else "低风险"
                 color = "#f87171" if result['prediction'] == 1 else "#34d399"
-
                 st.markdown(f"#### {disease}")
                 st.markdown(
                     f"<div style='color:{color}; font-size:16px; font-weight:bold;'>评估结果: {risk_level}</div>",
                     unsafe_allow_html=True
                 )
-
-                prob_text = "".join(map(str, result['probability'])) if isinstance(result['probability'], list) else str(result['probability'])
+                prob_text = str(result['probability'])
                 st.write(f"预测概率: {prob_text}")
 
-        # 添加删除按钮
+        # 5️⃣ 删除按钮
         col1, col2 = st.columns(2)
         with col1:
             if st.button("删除此记录", use_container_width=True, type="secondary"):
                 try:
-                    res = requests.post(f"{FLASK_BASE_URL}/user/delete",
-                        json={"filename": selected_file},timeout=10)
+                    res = requests.post(
+                        f"{FLASK_BASE_URL}/user/delete",
+                        json={"id": selected_id},   # ✅ 改为 id
+                        timeout=10
+                    )
                     if res.status_code == 200:
-                        st.success(f"记录 {selected_file} 已删除")
+                        st.success("记录已删除")
                         st.rerun()
                     else:
                         st.error(res.json().get("message", "删除失败"))
@@ -583,7 +592,7 @@ def render_history():
             if st.button("返回评估", use_container_width=True):
                 st.session_state['active_tab'] = 'assessment'
                 st.rerun()
-                
+
                 
 
 

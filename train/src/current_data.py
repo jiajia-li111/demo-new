@@ -34,8 +34,8 @@ class RealtimeDataProcessor:
         """获取用于显示的数据"""
         try:
             data = get_realtime_health_data()
-            current = data["current"]
-            summary = data["summary"]
+            current = data["current"]#当前的数据
+            summary = data["summary"]#当前的健康概要
             
             # 添加到历史记录
             self.data_history.append(current)

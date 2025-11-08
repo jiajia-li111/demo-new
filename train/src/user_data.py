@@ -1,118 +1,107 @@
-import os
-import sys
-import os
+# 用户数据管理模块
 import json
 from datetime import datetime
-
-# user_data.py 顶部的位置
-import os, sys
-current_dir = os.path.dirname(os.path.abspath(__file__))
-
-# 加到项目根（假设结构是 demo-project/train/src/ 当前文件在 src/ 下）
-project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
-if project_root not in sys.path:
-    sys.path.append(project_root)
-# 使用相对导入
-
-# 导入实时数据模块
-
-try:
-    from predict.detect_and_get.request import ask_deepseek
-except Exception:
-    print("❌ 导入 ask_deepseek 失败：")
-    ask_deepseek = None
+from database import get_conn 
 
 
-def build_health_prompt(task_name: str, inputs: dict, prediction: int, probability: list) -> str:
-    """构造发送给 DeepSeek 的中文提示词。"""
-    # 计算正类概率（假设 index=1 为患病概率）
-    positive_proba = 0.0
-    if isinstance(probability, (list, tuple)) and len(probability) >= 2:
-        positive_proba = float(probability[1])
-    elif isinstance(probability, (list, tuple)) and len(probability) == 1:
-        positive_proba = float(probability[0])
-
-    lines = [
-        "你是一名资深的临床健康顾问，请基于以下模型预测结果，用简体中文给出通俗、可执行的健康建议。",
-        f"- 任务: {task_name}",
-        f"- 预测类别: {prediction} (1=高风险/阳性，0=低风险/阴性)",
-        f"- 模型给出的患病概率(估计): {positive_proba:.2%}",
-        "- 用户关键输入:"
-    ]
-    for k, v in inputs.items():
-        lines.append(f"  - {k}: {v}")
-    lines += [
-        "要求:",
-        "1) 先用一句话总结总体风险判断。",
-        "2) 给出生活方式与饮食、运动、作息、体重管理、戒烟限酒等方面的具体建议（可分条列出）。",
-        "3) 指出需要警惕的症状与自我监测要点（如血压/血糖/体重监测频率与阈值）。",
-        "4) 给出何时需要尽快线下就医的触发条件。",
-        "5) 语气温和，避免制造恐慌；不进行诊断，仅提供健康建议。"
-    ]
-    return "\n".join(lines)
-
-
-def call_deepseek_or_fallback(prompt: str) -> str:
-    """调用 DeepSeek，失败时返回兜底建议。"""
-    # 优先使用项目内封装的 ask_deepseek
-    if ask_deepseek is not None:
-        try:
-            return ask_deepseek(prompt)
-        except Exception as err:
-            pass
-
-    # 兜底建议（不依赖外部 API）
-    return (
-        "提示：未能连接到健康建议服务，以下为通用健康建议供参考：\n"
-        "- 保持均衡饮食，控制精制糖和高盐摄入，增加蔬果与优质蛋白摄入。\n"
-        "- 每周至少进行150分钟中等强度有氧运动，并结合力量训练。\n"
-        "- 保持规律作息，确保7-8小时睡眠，减压与情绪管理。\n"
-        "- 体重管理：建议监测体重与腰围，逐步达成健康范围。\n"
-        "- 如存在胸闷胸痛、呼吸困难、持续头晕、明显浮肿、持续异常口渴与尿频等情况，请尽快线下就医。"
-    )
-
-
-# 用户数据管理模块
 class UserManager:
-    def __init__(self, data_dir="local_data"):
-        self.data_dir = os.path.abspath(data_dir)
-        os.makedirs(self.data_dir, exist_ok=True)
+    """基于 MySQL 的用户健康数据管理类"""
 
+    def __init__(self):
+        """初始化：确保 user_data 表存在"""
+        self._create_table()
+
+    def _create_table(self):
+        """防止表不存在（和 init_db 一样的安全检查）"""
+        sql = """
+        CREATE TABLE IF NOT EXISTS user_data (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            user_id VARCHAR(64) NOT NULL,
+            timestamp DATETIME NOT NULL,
+            form_data JSON NOT NULL,
+            predictions JSON NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """
+        conn = get_conn()
+        with conn.cursor() as cur:
+            cur.execute(sql)
+        conn.commit()
+        conn.close()
+
+    # === 保存用户数据 ===
     def save_user_data(self, user_id, form_data, predictions):
-        """保存用户数据和预测结果"""
-        user_data = {
-            'user_id': user_id,
-            'timestamp': datetime.now().isoformat(),
-            'form_data': form_data,
-            'predictions': predictions
-        }
-        filename = f"user_{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        filepath = os.path.join(self.data_dir, filename)
+        """保存用户提交的数据和预测结果"""
+        sql = """
+        INSERT INTO user_data (user_id, timestamp, form_data, predictions)
+        VALUES (%s, %s, %s, %s)
+        """
+        conn = get_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    sql,
+                    (
+                        user_id,
+                        datetime.now(),
+                        json.dumps(form_data, ensure_ascii=False),
+                        json.dumps(predictions, ensure_ascii=False),
+                    ),
+                )
+            conn.commit()
+            print(f"✅ 用户 {user_id} 的数据保存成功")
+        except Exception as e:
+            conn.rollback()
+            print("❌ 保存用户数据失败：", e)
+        finally:
+            conn.close()
 
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(user_data, f, ensure_ascii=False, indent=2)
-
-        return filepath
-
+    # === 获取所有用户记录 ===
     def get_saved_users(self):
-        return sorted([f for f in os.listdir(self.data_dir) if f.endswith('.json')], reverse=True)
+        """返回所有用户数据记录，最新在最前"""
+        sql = """
+        SELECT id, user_id, timestamp, form_data, predictions
+        FROM user_data
+        ORDER BY timestamp DESC
+        """
+        conn = get_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(sql)
+                return cur.fetchall()
+        finally:
+            conn.close()
 
-    def load_user_data(self, filename):
-        filepath = os.path.join(self.data_dir, filename)
-        if os.path.exists(filepath):
-            with open(filepath, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return None
-    
-    def delete_user_data(self, filename):
-        """删除某个用户记录"""
-        filepath = os.path.join(self.data_dir, filename)
-        if os.path.exists(filepath):
-            os.remove(filepath)
-            return True
-        return False
-    
-    
+    # === 加载单条记录 ===
+    def load_user_data(self, record_id):
+        """根据 ID 加载一条记录"""
+        sql = "SELECT * FROM user_data WHERE id = %s"
+        conn = get_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(sql, (record_id,))
+                return cur.fetchone()
+        finally:
+            conn.close()
 
+    # === 删除单条记录 ===
+    def delete_user_data(self, record_id):
+        """根据 ID 删除一条记录"""
+        sql = "DELETE FROM user_data WHERE id = %s"
+        conn = get_conn()
+        try:
+            with conn.cursor() as cur:
+                affected = cur.execute(sql, (record_id,))
+            conn.commit()
+            if affected > 0:
+                print(f"🗑️ 成功删除记录 ID={record_id}")
+            return affected > 0
+        except Exception as e:
+            conn.rollback()
+            print("❌ 删除记录失败：", e)
+            return False
+        finally:
+            conn.close()
+# 全局用户数据管理器实例
 user_manager = UserManager()
 

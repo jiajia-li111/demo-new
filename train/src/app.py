@@ -2,12 +2,14 @@
 from healthdevicer import device_simulator
 from data_gather import unified_processor
 from current_data import data_processor
-from user_data import user_manager,build_health_prompt,call_deepseek_or_fallback
+from user_data import user_manager
 from detect_diabetes import detect_diabetes_simple
 from detect_heart import detect_heart_simple
 from flask import Flask, jsonify, request
 from auth import register_user, login_user
 from database import init_db
+from deepseek import build_health_prompt,call_deepseek_or_fallback
+import json
 
 app = Flask(__name__)
 
@@ -45,13 +47,31 @@ def get_report_api():
 
         return jsonify(report), 200
     
-@app.route("/health/save",methods=["POST"])
-def get_save_api():
-    data = request.get_json() or {}
-    user_id = data.get("user_id", "anonymous")  # 如果没有传，就用默认值 "anonymous"
-    report = unified_processor.get_comprehensive_health_report(user_id)
-    filepath=unified_processor.save_health_report(report)
-    return jsonify(filepath), 200
+@app.route("/health/save", methods=["POST"])
+def save_health_report_api():
+    """保存健康报告"""
+    try:
+        data = request.get_json() or {}
+        # 优先使用前端传入的report，否则重新生成
+        if "report" in data:
+            report = data["report"]
+        else:
+            user_id = data.get("user_id", "anonymous")
+            report = unified_processor.get_comprehensive_health_report(user_id)
+
+        save_result = unified_processor.save_health_report(report)
+
+        return jsonify({
+            "success": True,
+            "message": "健康报告已保存",
+            "reference": save_result
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": f"保存失败: {str(e)}"
+        }), 500
+
 
 
 @app.route("/health/trends", methods=["GET"])
@@ -110,49 +130,139 @@ def predict_heart_api():
 
 @app.route("/user/save", methods=["POST"])
 def save_user_api():
-    data = request.get_json() or {}
-    user_id = data.get("user_id", "anonymous")
-    form_data = data.get("form_data", {})
-    predictions = data.get("predictions", {})
+    """保存用户评估数据（数据库版）"""
+    try:
+        data = request.get_json() or {}
+        user_id = data.get("user_id", "anonymous")
+        form_data = data.get("form_data", {})
+        predictions = data.get("predictions", {})
 
-    path = user_manager.save_user_data(user_id, form_data, predictions)
-    return jsonify({"message": "保存成功", "path": path}), 200
+        # 调用数据库保存方法
+        record_id = user_manager.save_user_data(user_id, form_data, predictions)
+
+        # 返回标准化响应
+        return jsonify({
+            "success": True,
+            "message": "用户数据保存成功",
+            "record_id": record_id  # 可用于前端后续查询
+        }), 200
+
+    except Exception as e:
+        print(f"❌ 保存用户数据失败: {e}")
+        return jsonify({
+            "success": False,
+            "message": f"保存失败: {str(e)}"
+        }), 500
+
 
 @app.route("/list_users", methods=["GET"])
 def list_users():
-    """返回所有历史记录文件名"""
+    """返回所有用户评估记录（从数据库读取）"""
     try:
-        files = user_manager.get_saved_users()
-        return jsonify(files)
+        records = user_manager.get_saved_users()
+
+        # 格式化输出
+        user_list = [{
+            "id": r["id"],
+            "user_id": r["user_id"],
+            "timestamp": r["timestamp"].strftime("%Y-%m-%d %H:%M:%S")
+        } for r in records]
+
+        return jsonify({
+            "success": True,
+            "count": len(user_list),
+            "users": user_list
+        }), 200
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
-    
+        print(f"❌ 获取用户列表失败: {e}")
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+
+# ===============================
+# 加载指定用户评估数据
+# ===============================
 @app.route("/user/load", methods=["POST"])
 def load_user_api():
+    """根据数据库记录 ID 加载用户评估数据"""
     data = request.get_json() or {}
-    filename = data.get("filename")
+    record_id = data.get("id")
 
-    if not filename:
-        return jsonify({"message": "缺少 filename"}), 400
+    if not record_id:
+        return jsonify({
+            "success": False,
+            "message": "缺少 id 参数"
+        }), 400
 
-    user_data = user_manager.load_user_data(filename)
-    if user_data:
-        return jsonify({"message": "加载成功", "data": user_data}), 200
-    else:
-        return jsonify({"message": "文件不存在"}), 404
+    try:
+        record = user_manager.load_user_data(record_id)
+        if not record:
+            return jsonify({
+                "success": False,
+                "message": "记录不存在"
+            }), 404
 
+        # 反序列化 JSON 数据
+        form_data = json.loads(record["form_data"])
+        predictions = json.loads(record["predictions"])
+
+        return jsonify({
+            "success": True,
+            "message": "加载成功",
+            "data": {
+                "id": record["id"],
+                "user_id": record["user_id"],
+                "timestamp": record["timestamp"].strftime("%Y-%m-%d %H:%M:%S"),
+                "form_data": form_data,
+                "predictions": predictions
+            }
+        }), 200
+
+    except Exception as e:
+        print(f"❌ 加载用户数据失败: {e}")
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+
+# ===============================
+# 删除指定用户评估数据
+# ===============================
 @app.route("/user/delete", methods=["POST"])
 def delete_user_api():
+    """删除指定 ID 的用户评估记录"""
     data = request.get_json() or {}
-    filename = data.get("filename")
+    record_id = data.get("id")
 
-    if not filename:
-        return jsonify({"message": "缺少 filename"}), 400
+    if not record_id:
+        return jsonify({
+            "success": False,
+            "message": "缺少 id 参数"
+        }), 400
 
-    if user_manager.delete_user_data(filename):
-        return jsonify({"message": "删除成功"}), 200
-    else:
-        return jsonify({"message": "文件不存在"}), 404
+    try:
+        success = user_manager.delete_user_data(record_id)
+        if success:
+            return jsonify({
+                "success": True,
+                "message": "删除成功"
+            }), 200
+        else:
+            return jsonify({
+                "success": False,
+                "message": "记录不存在"
+            }), 404
+
+    except Exception as e:
+        print(f"❌ 删除用户数据失败: {e}")
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
 
 @app.route("/health_prompt", methods=["POST"])
 def health_prompt():

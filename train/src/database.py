@@ -1,5 +1,4 @@
 # === 数据库配置 ===
-
 import os
 import pymysql
 from pymysql.cursors import DictCursor
@@ -19,7 +18,7 @@ def get_conn():
 
 # === 初始化表 ===
 def init_db():
-    sql = """
+    sql_users = """
     CREATE TABLE IF NOT EXISTS users (
         id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         username VARCHAR(64) NOT NULL UNIQUE,
@@ -28,9 +27,32 @@ def init_db():
         PRIMARY KEY (id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
+    sql_user_data = """
+    CREATE TABLE IF NOT EXISTS user_data (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL,
+        timestamp DATETIME NOT NULL,
+        form_data JSON NOT NULL,
+        predictions JSON NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    """
+    sql_users_health_reports=("""
+            CREATE TABLE IF NOT EXISTS health_reports (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                user_id VARCHAR(64) NOT NULL,
+                timestamp DATETIME NOT NULL,
+                report JSON NOT NULL,
+                score DECIMAL(5,2) NOT NULL,
+                level VARCHAR(16) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """)
     conn = get_conn()
     with conn.cursor() as cur:
-        cur.execute(sql)
+        cur.execute(sql_users)
+        cur.execute(sql_user_data)
+        cur.execute(sql_users_health_reports)
     conn.commit()
     conn.close()
     print("✅ 数据库初始化完成")
