@@ -13,11 +13,13 @@
 	|--run_out #训练出的权重
 	|--src #训练模型
 ```
-cd "C:\Users\17818\Downloads\DEMO\demo-project\train\src"
-python app.py
+cd C:\Users\17818\Downloads\demo-project
+python -m backend.api.app
 
-cd "C:\Users\17818\Downloads\DEMO\demo-project\train\src"
+
+cd "C:\Users\17818\Downloads\demo-project\frontend\src"
 streamlit run streamlit_front.py
+
 
 
 
