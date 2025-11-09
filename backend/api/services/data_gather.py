@@ -7,7 +7,7 @@
 import json
 from datetime import datetime
 from typing import Dict, List, Optional
-from utils.database import get_conn
+from ..utils.database import get_conn
 from .healthdevicer import device_simulator
 from .current_data import data_processor
 from .user_data import user_manager
