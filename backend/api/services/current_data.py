@@ -3,7 +3,7 @@
 处理来自硬件设备的健康数据，并提供给Streamlit界面显示
 """
 from datetime import datetime
-from services.healthdevicer import device_simulator, get_realtime_health_data
+from .healthdevicer import device_simulator, get_realtime_health_data
 
 class RealtimeDataProcessor:
     """实时数据处理类"""
