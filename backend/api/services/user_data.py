@@ -1,7 +1,7 @@
 # 用户数据管理模块
 import json
 from datetime import datetime
-from utils.database import get_conn 
+from ..utils.database import get_conn 
 
 
 class UserManager:
