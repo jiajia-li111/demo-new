@@ -20,8 +20,8 @@ python -m backend.api.app
 cd "C:\Users\17818\Downloads\demo-project\frontend\src"
 streamlit run streamlit_front.py
 
-
-
+cd frontend
+npm run dev
 
 
 
