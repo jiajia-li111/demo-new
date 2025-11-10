@@ -33,3 +33,4 @@ def detect_diabetes_simple(
     }
 
 
+

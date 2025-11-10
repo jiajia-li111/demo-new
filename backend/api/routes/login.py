@@ -4,7 +4,7 @@ import re
 import pymysql
 import bcrypt
 from pymysql.cursors import DictCursor
-from utils.database import get_conn
+from ..utils.database import get_conn
 
 
 # === 密码加密与验证 ===

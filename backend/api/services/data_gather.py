@@ -7,7 +7,7 @@
 import json
 from datetime import datetime
 from typing import Dict, List, Optional
-from utils.database import get_conn
+from ..utils.database import get_conn
 from .healthdevicer import device_simulator
 from .current_data import data_processor
 from .user_data import user_manager
@@ -358,5 +358,7 @@ def save_current_health_report(user_id: str = None) -> str:
     """保存当前健康报告的便捷函数"""
     report = unified_processor.get_comprehensive_health_report(user_id)
     return unified_processor.save_health_report(report)
+
+
 
 
