@@ -67,19 +67,20 @@ def predict_heart():
 def create_health_prompt():
     try:
         data = request.get_json(force=True)
-    except Exception:
-        return jsonify({"error": "请求体不是有效的 JSON"}), 400
+        task_name = data.get("task_name", "")
+        inputs = data.get("inputs", {})
+        prediction = data.get("prediction", 0)
+        probability = data.get("probability", [0.0, 0.0])
 
-    task_name = data.get("task_name", "")
-    inputs = data.get("inputs", {})
-    prediction = data.get("prediction", 0)
-    probability = data.get("probability", [0.0, 0.0])
-
-    try:
         prompt = build_health_prompt(task_name, inputs, prediction, probability)
         return jsonify({"prompt": prompt}), 200
-    except Exception as exc:
-        return jsonify({"error": str(exc)}), 500
+
+    except Exception as e:
+        import traceback
+        print("❌ health_prompt 出错：", e)
+        traceback.print_exc()  # ✅ 强制打印完整错误
+        return jsonify({"error": str(e)}), 500
+
 
 
 @predict_bp.route("/deepseek_call", methods=["POST"])
