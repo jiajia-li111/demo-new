@@ -6,6 +6,7 @@ import RegisterPage from "./pages/RegisterPage";
 import HealthForm from "./pages/HealthForm";
 import HistoryPage from "./pages/HistoryPage";
 import RealtimeMonitor from "./pages/RealtimeMonitor";
+import CheckinPage from "./pages/CheckinPage";
 import { Layout } from "antd";
 
 const { Content } = Layout;
@@ -62,6 +63,20 @@ export default function App() {
         />
 
         <Route
+          path="/checkin"
+          element={
+            <ProtectedRoute>
+              <Layout style={{ minHeight: "100vh" }}>
+                <NavBar />
+                <Content style={{ padding: "24px 5%" }}>
+                  <CheckinPage />
+                </Content>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/monitor"
           element={
             <ProtectedRoute>
@@ -81,7 +96,6 @@ export default function App() {
     </Router>
   );
 }
-
 
 
 

@@ -48,11 +48,21 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """)
+    sql_checkins = """
+    CREATE TABLE IF NOT EXISTS checkins (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL,
+        checkin_date DATE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_user_date (user_id, checkin_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    """
     conn = get_conn()
     with conn.cursor() as cur:
         cur.execute(sql_users)
         cur.execute(sql_user_data)
         cur.execute(sql_users_health_reports)
+        cur.execute(sql_checkins)
     conn.commit()
     conn.close()
     print("✅ 数据库初始化完成")

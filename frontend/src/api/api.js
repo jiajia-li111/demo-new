@@ -20,11 +20,15 @@ export const listUsers = () => api.get("/list_users");
 export const loadUser = (id) => api.post("/user/load", { id });
 export const deleteUser = (id) => api.post("/user/delete", { id });
 
+// === 签到 ===
+export const checkin = (data) => api.post("/checkin", data);
+export const getCheckinStatus = (userId) =>
+  api.get("/checkin/status", { params: { user_id: userId } });
+
 // === DeepSeek 健康建议 ===
 export const healthPrompt = (data) => api.post("/health_prompt", data);
 export const deepseekCall = (data) => api.post("/deepseek_call", data);
 
 // === 可选：统一导出（如果想用 default api 实例） ===
 export default api;
-
 

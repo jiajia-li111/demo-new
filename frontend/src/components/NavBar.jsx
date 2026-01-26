@@ -7,6 +7,7 @@ import {
   HeartOutlined,
   HistoryOutlined,
   RadarChartOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 
 const { Header } = Layout;
@@ -23,6 +24,7 @@ export default function NavBar() {
     // 根据路径自动高亮菜单
     if (location.pathname.startsWith("/form")) setCurrent("form");
     else if (location.pathname.startsWith("/history")) setCurrent("history");
+    else if (location.pathname.startsWith("/checkin")) setCurrent("checkin");
     else if (location.pathname.startsWith("/monitor")) setCurrent("monitor");
   }, [location.pathname]);
 
@@ -33,6 +35,7 @@ export default function NavBar() {
     setCurrent(e.key);
     if (e.key === "form") navigate("/form");
     else if (e.key === "history") navigate("/history");
+    else if (e.key === "checkin") navigate("/checkin");
     else if (e.key === "monitor") navigate("/monitor");
   };
 
@@ -117,6 +120,11 @@ export default function NavBar() {
             icon: <HistoryOutlined />,
           },
           {
+            key: "checkin",
+            label: "每日签到",
+            icon: <CalendarOutlined />,
+          },
+          {
             key: "monitor",
             label: "实时监测",
             icon: <RadarChartOutlined />,
@@ -141,5 +149,4 @@ export default function NavBar() {
     </Header>
   );
 }
-
 
