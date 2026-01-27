@@ -30,9 +30,8 @@ export default function LoginPage() {
         localStorage.setItem("token", "ok");
         localStorage.setItem("username", values.username);
         
-        // 🚨 修正：改回原来的跳转逻辑，直接去健康评估页
-        // 之前改成了 /dashboard，如果路由没配好会导致死循环跳回登录页
-        navigate("/form"); 
+        // ✅ [修正] 跳转到根路径 "/"，即显示新的总控制台
+        navigate("/"); 
       } else {
         message.error(res.data.message || "用户名或密码错误");
       }

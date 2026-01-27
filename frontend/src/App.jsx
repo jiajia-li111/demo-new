@@ -6,6 +6,7 @@ import RegisterPage from "./pages/RegisterPage";
 import HealthForm from "./pages/HealthForm";
 import HistoryPage from "./pages/HistoryPage";
 import RealtimeMonitor from "./pages/RealtimeMonitor";
+import DashboardPage from "./pages/DashboardPage"; 
 import { Layout } from "antd";
 
 const { Content } = Layout;
@@ -14,25 +15,20 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        {/* 登录注册页面不需要导航栏 */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* 登录后页面统一包在 ProtectedRoute + NavBar 内 */}
+        {/* 1. 总面板 (Dashboard) - 无 NavBar */}
         <Route
           path="/"
           element={
             <ProtectedRoute>
-              <Layout style={{ minHeight: "100vh" }}>
-                <NavBar />
-                <Content style={{ padding: "24px 5%" }}>
-                  <HealthForm />
-                </Content>
-              </Layout>
+              <DashboardPage />
             </ProtectedRoute>
           }
         />
 
+        {/* 2. 健康评估页面 - 有 NavBar */}
         <Route
           path="/form"
           element={
@@ -47,6 +43,7 @@ export default function App() {
           }
         />
 
+        {/* 3. 历史记录页面 - 有 NavBar (这里之前是占位符，现在补全了) */}
         <Route
           path="/history"
           element={
@@ -61,6 +58,7 @@ export default function App() {
           }
         />
 
+        {/* 4. 实时监测页面 - 有 NavBar (这里之前是占位符，现在补全了) */}
         <Route
           path="/monitor"
           element={
@@ -75,7 +73,7 @@ export default function App() {
           }
         />
 
-        {/* 未匹配路由直接跳转 */}
+        {/* 404 跳转 */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </Router>
