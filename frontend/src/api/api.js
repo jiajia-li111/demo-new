@@ -1,8 +1,7 @@
 import axios from "axios";
 
-// 创建 axios 实例，所有请求自动加上 `/api` 前缀
 const api = axios.create({
-  baseURL: "/api", // Vite 会代理到 http://127.0.0.1:5000
+  baseURL: "/api",
   timeout: 100000,
 });
 
@@ -20,14 +19,19 @@ export const listUsers = () => api.get("/list_users");
 export const loadUser = (id) => api.post("/user/load", { id });
 export const deleteUser = (id) => api.post("/user/delete", { id });
 
-// === DeepSeek 健康建议 ===
+// === DeepSeek ===
 export const healthPrompt = (data) => api.post("/health_prompt", data);
 export const deepseekCall = (data) => api.post("/deepseek_call", data);
 
-// === [新增] 签到功能 ===
+// === 签到功能 ===
 export const getCheckinStatus = (userId) => api.get("/checkin/status", { params: { user_id: userId } });
 export const performCheckin = (data) => api.post("/checkin", data);
 
-export default api;
+// === [新增] 智能亲情守护 ===
+export const getGuardianConfig = (userId) => api.get("/guardian/config", { params: { user_id: userId } });
+export const saveGuardianConfig = (data) => api.post("/guardian/config", data);
+export const getGuardianLogs = (userId) => api.get("/guardian/logs", { params: { user_id: userId } });
+export const triggerGuardianAlert = (data) => api.post("/guardian/trigger", data);
 
+export default api;
 

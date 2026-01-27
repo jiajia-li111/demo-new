@@ -1,12 +1,14 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-// import NavBar from "./components/NavBar"; // ❌ 这一行可以删掉或者注释掉了
+// 记得保留原来的 NavBar import，虽然总控制台不用，但子页面需要
+import NavBar from "./components/NavBar"; 
 import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import HealthForm from "./pages/HealthForm";
 import HistoryPage from "./pages/HistoryPage";
 import RealtimeMonitor from "./pages/RealtimeMonitor";
-import DashboardPage from "./pages/DashboardPage"; 
+import DashboardPage from "./pages/Dashboardpage";// 注意文件名大小写
+import GuardianPage from "./pages/GuardianPage"; // [新增引入]
 import { Layout } from "antd";
 
 const { Content } = Layout;
@@ -28,13 +30,13 @@ export default function App() {
           }
         />
 
-        {/* 2. 健康评估页面 (去掉 NavBar) */}
+        {/* 2. 健康评估 */}
         <Route
           path="/form"
           element={
             <ProtectedRoute>
               <Layout style={{ minHeight: "100vh", background: "#f8fafc" }}>
-                {/* <NavBar />  <-- 删除了这一行 */}
+                {/* 如果 HealthForm 里自带 PageHeader，这里就不需要 NavBar */}
                 <Content style={{ padding: "24px 5%" }}>
                   <HealthForm />
                 </Content>
@@ -43,13 +45,12 @@ export default function App() {
           }
         />
 
-        {/* 3. 历史记录页面 (去掉 NavBar) */}
+        {/* 3. 历史记录 */}
         <Route
           path="/history"
           element={
             <ProtectedRoute>
               <Layout style={{ minHeight: "100vh", background: "#f8fafc" }}>
-                {/* <NavBar />  <-- 删除了这一行 */}
                 <Content style={{ padding: "24px 5%" }}>
                   <HistoryPage />
                 </Content>
@@ -58,15 +59,28 @@ export default function App() {
           }
         />
 
-        {/* 4. 实时监测页面 (去掉 NavBar) */}
+        {/* 4. 实时监测 */}
         <Route
           path="/monitor"
           element={
             <ProtectedRoute>
               <Layout style={{ minHeight: "100vh", background: "#f8fafc" }}>
-                {/* <NavBar />  <-- 删除了这一行 */}
                 <Content style={{ padding: "24px 5%" }}>
                   <RealtimeMonitor />
+                </Content>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 5. [新增] 智能亲情守护中心 */}
+        <Route
+          path="/guardian"
+          element={
+            <ProtectedRoute>
+              <Layout style={{ minHeight: "100vh", background: "#f8fafc" }}>
+                <Content style={{ padding: "24px 5%" }}>
+                  <GuardianPage />
                 </Content>
               </Layout>
             </ProtectedRoute>
@@ -78,7 +92,6 @@ export default function App() {
     </Router>
   );
 }
-
 
 
 

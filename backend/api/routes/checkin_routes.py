@@ -1,6 +1,6 @@
 # backend/api/routes/checkin_routes.py
 from flask import Blueprint, request, jsonify
-from api.utils.database import get_conn
+from ..utils.database import get_conn
 from datetime import date
 import random
 
