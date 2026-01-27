@@ -11,8 +11,11 @@ import {
   LogoutOutlined,
   SafetyCertificateOutlined,
   BellOutlined,
-  RightOutlined
+  RightOutlined,
+  CalendarFilled // [新增图标]
 } from "@ant-design/icons";
+import CreativeCheckinModal from "../components/CreativeCheckinModal"; // [新增引入]
+import { getCheckinStatus } from "../api/api"; // [新增引入]
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -37,11 +40,26 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const username = localStorage.getItem("username") || "用户";
   const [greeting, setGreeting] = useState(getTimeGreeting());
+  
+  // [新增] 签到状态
+  const [checkinOpen, setCheckinOpen] = useState(false);
+  const [hasCheckedIn, setHasCheckedIn] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setGreeting(getTimeGreeting()), 1000 * 60 * 60);
     return () => clearInterval(timer);
   }, []);
+
+  // [新增] 检查签到状态
+  useEffect(() => {
+    if (username) {
+      getCheckinStatus(username).then(res => {
+        if (res.data.success && res.data.is_checked_in) {
+          setHasCheckedIn(true);
+        }
+      }).catch(err => console.error("Checkin status error", err));
+    }
+  }, [username]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -107,11 +125,11 @@ export default function DashboardPage() {
         flexDirection: "column",
       }}
     >
-      {/* 1. 动态背景光晕 (提升氛围感) */}
+      {/* 1. 动态背景光晕 */}
       <div style={{ position: "absolute", top: -100, left: -100, width: 600, height: 600, background: "radial-gradient(circle, rgba(16,185,129,0.15) 0%, rgba(255,255,255,0) 70%)", borderRadius: "50%", filter: "blur(60px)", zIndex: 0 }} />
       <div style={{ position: "absolute", bottom: -100, right: -100, width: 500, height: 500, background: "radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(255,255,255,0) 70%)", borderRadius: "50%", filter: "blur(60px)", zIndex: 0 }} />
 
-      {/* 2. 顶部导航栏 (玻璃拟态) */}
+      {/* 2. 顶部导航栏 */}
       <div style={{ 
         padding: "20px 40px", 
         display: "flex", 
@@ -138,7 +156,6 @@ export default function DashboardPage() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-          {/* 消息通知铃铛 */}
           <Badge dot offset={[-2, 2]} color="#ef4444">
             <Button type="text" shape="circle" icon={<BellOutlined style={{ fontSize: 18, color: "#64748b" }} />} />
           </Badge>
@@ -164,7 +181,6 @@ export default function DashboardPage() {
       {/* 3. 主要内容区 */}
       <div style={{ flex: 1, zIndex: 1, padding: "40px 24px", maxWidth: 1200, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
         
-        {/* 欢迎 Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -184,7 +200,6 @@ export default function DashboardPage() {
           </Text>
         </motion.div>
 
-        {/* 卡片 Grid (微件化设计) */}
         <Row gutter={[24, 24]}>
           {actions.map((item, index) => (
             <Col key={item.key} xs={24} md={8}>
@@ -199,7 +214,7 @@ export default function DashboardPage() {
                   bordered={false}
                   onClick={() => navigate(item.path)}
                   style={{
-                    height: 280, // 降低高度，使其更像是一个精致的板块
+                    height: 280,
                     borderRadius: 24,
                     background: item.bgGradient,
                     position: "relative",
@@ -209,7 +224,6 @@ export default function DashboardPage() {
                   }}
                   bodyStyle={{ padding: "32px 28px", height: "100%", display: "flex", flexDirection: "column" }}
                 >
-                  {/* 顶部标签和图标 */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
                     <div style={{ 
                       width: 56, height: 56, 
@@ -236,7 +250,6 @@ export default function DashboardPage() {
                     </span>
                   </div>
 
-                  {/* 标题和描述 */}
                   <div style={{ flex: 1 }}>
                     <Title level={3} style={{ marginBottom: 12, fontSize: 22, color: "#334155" }}>
                       {item.title}
@@ -246,7 +259,6 @@ export default function DashboardPage() {
                     </Paragraph>
                   </div>
 
-                  {/* 底部装饰和进入按钮 */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 24, zIndex: 2 }}>
                     <div style={{ 
                       display: "flex", alignItems: "center", gap: 6, 
@@ -257,7 +269,6 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* 背景装饰图案 */}
                   <div style={{ position: "absolute", top: -20, right: -20, width: 120, height: 120, background: item.color, opacity: 0.05, borderRadius: "50%" }} />
                   <WaveDecoration color={item.color} />
                 </Card>
@@ -266,6 +277,47 @@ export default function DashboardPage() {
           ))}
         </Row>
       </div>
+
+      {/* [新增] 创意签到悬浮球 */}
+      <motion.div
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => !hasCheckedIn && setCheckinOpen(true)}
+        style={{
+          position: "fixed",
+          bottom: 40,
+          right: 40,
+          width: 64,
+          height: 64,
+          borderRadius: "50%",
+          background: hasCheckedIn 
+            ? "linear-gradient(135deg, #94a3b8 0%, #cbd5e1 100%)" // 已签到为灰色
+            : "linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)", // 未签到为亮黄色
+          boxShadow: hasCheckedIn ? "none" : "0 10px 25px rgba(245, 158, 11, 0.4)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: hasCheckedIn ? "default" : "pointer",
+          zIndex: 100,
+          border: "4px solid rgba(255,255,255,0.4)"
+        }}
+      >
+        <CalendarFilled style={{ fontSize: 28, color: "white" }} />
+        
+        {/* 未签到时的呼吸光效 */}
+        {!hasCheckedIn && (
+          <span style={{ position: "absolute", top: 0, right: 0, width: 16, height: 16, background: "#ef4444", borderRadius: "50%", border: "2px solid white" }} />
+        )}
+      </motion.div>
+
+      {/* [新增] 签到弹窗 */}
+      <CreativeCheckinModal 
+        open={checkinOpen} 
+        onClose={() => setCheckinOpen(false)}
+        onSuccess={() => setHasCheckedIn(true)}
+        userId={username}
+      />
+
     </div>
   );
 }

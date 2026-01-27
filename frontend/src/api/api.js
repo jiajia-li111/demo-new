@@ -24,7 +24,10 @@ export const deleteUser = (id) => api.post("/user/delete", { id });
 export const healthPrompt = (data) => api.post("/health_prompt", data);
 export const deepseekCall = (data) => api.post("/deepseek_call", data);
 
-// === 可选：统一导出（如果想用 default api 实例） ===
+// === [新增] 签到功能 ===
+export const getCheckinStatus = (userId) => api.get("/checkin/status", { params: { user_id: userId } });
+export const performCheckin = (data) => api.post("/checkin", data);
+
 export default api;
 
 
