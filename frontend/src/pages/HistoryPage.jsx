@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Table, Card, Button, message, Modal, Descriptions } from "antd";
 import { listUsers, loadUser, deleteUser } from "../api/api";
+import PageHeader from "../components/PageHeader"; // [新增] 引入头部组件
 
 export default function HistoryPage() {
   const [records, setRecords] = useState([]);
@@ -66,30 +67,35 @@ export default function HistoryPage() {
   ];
 
   return (
-    <Card title="🕓 历史健康评估记录">
-      <Table columns={columns} dataSource={records} rowKey="id" loading={loading} />
-      <Modal open={open} onCancel={() => setOpen(false)} footer={null} width={720} title="评估详情">
-        {detail && (
-          <>
-            <Descriptions bordered column={1} size="small" title="基本信息" style={{ marginBottom: 12 }}>
-              <Descriptions.Item label="用户">{detail.user_id}</Descriptions.Item>
-              <Descriptions.Item label="时间">{detail.timestamp}</Descriptions.Item>
-            </Descriptions>
-            <Descriptions bordered column={1} size="small" title="表单数据" style={{ marginBottom: 12 }}>
-              {Object.entries(detail.form_data || {}).map(([k, v]) => (
-                <Descriptions.Item key={k} label={k}>{String(v)}</Descriptions.Item>
-              ))}
-            </Descriptions>
-            <Descriptions bordered column={1} size="small" title="预测结果">
-              {Object.entries(detail.predictions || {}).map(([k, v]) => (
-                <Descriptions.Item key={k} label={k}>
-                  结果：{v?.prediction ? "高风险" : "低风险"}； 概率：{String(v?.probability)}
-                </Descriptions.Item>
-              ))}
-            </Descriptions>
-          </>
-        )}
-      </Modal>
-    </Card>
+    <>
+      {/* [新增] 顶部导航头 */}
+      <PageHeader title="历史档案" subtitle="History Records" />
+
+      <Card title="🕓 历史健康评估记录">
+        <Table columns={columns} dataSource={records} rowKey="id" loading={loading} />
+        <Modal open={open} onCancel={() => setOpen(false)} footer={null} width={720} title="评估详情">
+          {detail && (
+            <>
+              <Descriptions bordered column={1} size="small" title="基本信息" style={{ marginBottom: 12 }}>
+                <Descriptions.Item label="用户">{detail.user_id}</Descriptions.Item>
+                <Descriptions.Item label="时间">{detail.timestamp}</Descriptions.Item>
+              </Descriptions>
+              <Descriptions bordered column={1} size="small" title="表单数据" style={{ marginBottom: 12 }}>
+                {Object.entries(detail.form_data || {}).map(([k, v]) => (
+                  <Descriptions.Item key={k} label={k}>{String(v)}</Descriptions.Item>
+                ))}
+              </Descriptions>
+              <Descriptions bordered column={1} size="small" title="预测结果">
+                {Object.entries(detail.predictions || {}).map(([k, v]) => (
+                  <Descriptions.Item key={k} label={k}>
+                    结果：{v?.prediction ? "高风险" : "低风险"}； 概率：{String(v?.probability)}
+                  </Descriptions.Item>
+                ))}
+              </Descriptions>
+            </>
+          )}
+        </Modal>
+      </Card>
+    </>
   );
 }

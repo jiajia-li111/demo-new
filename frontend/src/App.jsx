@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import NavBar from "./components/NavBar";
+// import NavBar from "./components/NavBar"; // ❌ 这一行可以删掉或者注释掉了
 import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -18,7 +18,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* 1. 总面板 (Dashboard) - 无 NavBar */}
+        {/* 1. 总面板 (Dashboard) */}
         <Route
           path="/"
           element={
@@ -28,13 +28,13 @@ export default function App() {
           }
         />
 
-        {/* 2. 健康评估页面 - 有 NavBar */}
+        {/* 2. 健康评估页面 (去掉 NavBar) */}
         <Route
           path="/form"
           element={
             <ProtectedRoute>
-              <Layout style={{ minHeight: "100vh" }}>
-                <NavBar />
+              <Layout style={{ minHeight: "100vh", background: "#f8fafc" }}>
+                {/* <NavBar />  <-- 删除了这一行 */}
                 <Content style={{ padding: "24px 5%" }}>
                   <HealthForm />
                 </Content>
@@ -43,13 +43,13 @@ export default function App() {
           }
         />
 
-        {/* 3. 历史记录页面 - 有 NavBar (这里之前是占位符，现在补全了) */}
+        {/* 3. 历史记录页面 (去掉 NavBar) */}
         <Route
           path="/history"
           element={
             <ProtectedRoute>
-              <Layout style={{ minHeight: "100vh" }}>
-                <NavBar />
+              <Layout style={{ minHeight: "100vh", background: "#f8fafc" }}>
+                {/* <NavBar />  <-- 删除了这一行 */}
                 <Content style={{ padding: "24px 5%" }}>
                   <HistoryPage />
                 </Content>
@@ -58,13 +58,13 @@ export default function App() {
           }
         />
 
-        {/* 4. 实时监测页面 - 有 NavBar (这里之前是占位符，现在补全了) */}
+        {/* 4. 实时监测页面 (去掉 NavBar) */}
         <Route
           path="/monitor"
           element={
             <ProtectedRoute>
-              <Layout style={{ minHeight: "100vh" }}>
-                <NavBar />
+              <Layout style={{ minHeight: "100vh", background: "#f8fafc" }}>
+                {/* <NavBar />  <-- 删除了这一行 */}
                 <Content style={{ padding: "24px 5%" }}>
                   <RealtimeMonitor />
                 </Content>
@@ -73,7 +73,6 @@ export default function App() {
           }
         />
 
-        {/* 404 跳转 */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </Router>
