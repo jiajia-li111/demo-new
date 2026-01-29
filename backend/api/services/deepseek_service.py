@@ -1,25 +1,10 @@
 import os
 import sys
-import os
 import json
 from datetime import datetime
 
-import sys, os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-
-
-
-
-# 导入实时数据模块
-
-try:
-    from model.predict.detect_and_get.request import ask_deepseek
-    print(" 导入 ask_deepseek sucess：")
-except Exception:
-    print("❌ 导入 ask_deepseek 失败：")
-    ask_deepseek = None
-
+# 1. 删除顶部的 sys.path hack 和 try-import 块
+# 防止在文件加载初期就触发复杂的依赖链
 
 def build_health_prompt(task_name, inputs, prediction, probability):
     """根据输入构造健康建议提示词"""
@@ -57,14 +42,30 @@ def build_health_prompt(task_name, inputs, prediction, probability):
         raise RuntimeError(f"构建提示词失败: {e}")
 
 
-
 def call_deepseek_or_fallback(prompt: str) -> str:
     """调用 DeepSeek，失败时返回兜底建议。"""
+    
+    # ✅ [关键修改] 将导入移动到函数内部（延迟导入）
+    # 这样只有在真正调用这个函数时才会去加载 model 模块
+    # 避免了启动时的循环依赖死锁
+    ask_deepseek = None
+    try:
+        # 确保路径能找到 model 目录
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        backend_dir = os.path.dirname(os.path.dirname(current_dir)) # backend 的上一级
+        if backend_dir not in sys.path:
+            sys.path.append(backend_dir)
+            
+        from model.predict.detect_and_get.request import ask_deepseek
+    except Exception as e:
+        print(f"❌ 延迟导入 ask_deepseek 失败: {e}")
+    
     # 优先使用项目内封装的 ask_deepseek
     if ask_deepseek is not None:
         try:
             return ask_deepseek(prompt)
         except Exception as err:
+            print(f"⚠️ DeepSeek 调用出错: {err}")
             pass
 
     # 兜底建议（不依赖外部 API）

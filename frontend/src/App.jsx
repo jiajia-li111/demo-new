@@ -7,8 +7,9 @@ import RegisterPage from "./pages/RegisterPage";
 import HealthForm from "./pages/HealthForm";
 import HistoryPage from "./pages/HistoryPage";
 import RealtimeMonitor from "./pages/RealtimeMonitor";
-import DashboardPage from "./pages/Dashboardpage";// 注意文件名大小写
-import GuardianPage from "./pages/GuardianPage"; // [新增引入]
+import DashboardPage from "./pages/Dashboardpage"; // 注意文件名大小写
+import GuardianPage from "./pages/GuardianPage";   // [新增引入]
+import AIChatBot from "./components/AIChatBot";    // [新增] 引入AI聊天组件
 import { Layout } from "antd";
 
 const { Content } = Layout;
@@ -16,6 +17,12 @@ const { Content } = Layout;
 export default function App() {
   return (
     <Router>
+      {/* [新增] 智能健康助手悬浮窗 
+          它放在 Routes 外面，这样在切换页面时它不会消失。
+          组件内部有登录检查，未登录时会自动隐藏。
+      */}
+      <AIChatBot />
+
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
