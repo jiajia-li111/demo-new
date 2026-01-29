@@ -8,7 +8,7 @@ import {
   RadarChartOutlined,
   UserOutlined,
   LogoutOutlined,
-  SafetyCertificateOutlined,
+  SafetyCertificateFilled,
   BellOutlined,
   RightOutlined,
   CalendarFilled,
@@ -204,7 +204,7 @@ export default function DashboardPage() {
             borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: "0 4px 12px rgba(16,185,129,0.3)"
           }}>
-            <SafetyCertificateOutlined style={{ fontSize: 20, color: "white" }} />
+            <SafetyCertificateFilled style={{ fontSize: 20, color: "white" }} />
           </div>
           <span style={{ fontSize: 18, fontWeight: 700, color: "#1e293b", fontFamily: "'Inter', sans-serif" }}>
             HealthSystem
